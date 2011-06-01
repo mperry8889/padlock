@@ -1,0 +1,511 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Padlock - Library for HTTP File Transfer</title>
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body style="background-color: white">
+
+<p><a name="__index__"></a></p>
+<!-- INDEX BEGIN -->
+
+<ul>
+
+	<li><a href="#name">NAME</a></li>
+	<li><a href="#synopsis">SYNOPSIS</a></li>
+	<li><a href="#abstract">ABSTRACT</a></li>
+	<li><a href="#description">DESCRIPTION</a></li>
+	<ul>
+
+		<li><a href="#library">Library</a></li>
+		<li><a href="#function_scripts">Function Scripts</a></li>
+	</ul>
+
+	<li><a href="#api">API</a></li>
+	<ul>
+
+		<li><a href="#cookie_session_management">Cookie/Session Management</a></li>
+		<li><a href="#file_management">File Management</a></li>
+		<li><a href="#html">HTML</a></li>
+		<li><a href="#_private__helper_subroutines">(Private) Helper Subroutines</a></li>
+		<ul>
+
+			<li><a href="#configuration_hash">Configuration Hash</a></li>
+			<li><a href="#cookie_session_management">Cookie/Session Management</a></li>
+			<li><a href="#file_management">File Management</a></li>
+		</ul>
+
+	</ul>
+
+	<li><a href="#configuration">CONFIGURATION</a></li>
+	<li><a href="#usage">USAGE</a></li>
+	<ul>
+
+		<li><a href="#user_management">User Management</a></li>
+		<ul>
+
+			<li><a href="#adding_users">Adding Users</a></li>
+			<li><a href="#removing_users">Removing Users</a></li>
+			<li><a href="#modifying_users">Modifying Users</a></li>
+			<li><a href="#resetting_passwords">Resetting Passwords</a></li>
+		</ul>
+
+		<li><a href="#using_the_library">Using the Library</a></li>
+	</ul>
+
+	<li><a href="#bugs">BUGS</a></li>
+	<li><a href="#changelog">CHANGELOG</a></li>
+	<li><a href="#author">AUTHOR</a></li>
+	<li><a href="#version">VERSION</a></li>
+</ul>
+<!-- INDEX END -->
+
+<hr />
+<p>
+</p>
+<h1><a name="name">NAME</a></h1>
+<p>Padlock - Library for HTTP File Transfer</p>
+<p>
+</p>
+<hr />
+<h1><a name="synopsis">SYNOPSIS</a></h1>
+<pre>
+ use CGI qw/:standard/;
+ use Padlock;</pre>
+<pre>
+ my($q) = new CGI;
+ my($p) = new Padlock(session =&gt; $q-&gt;cookie('Padlock_ID'), str =&gt; $q-&gt;cookie('Padlock_Str'));</pre>
+<pre>
+ $p-&gt;cd($p-&gt;home);</pre>
+<pre>
+ for ($p-&gt;ls()) {
+    print &quot;$_\n&quot;;
+ }</pre>
+<p>
+</p>
+<hr />
+<h1><a name="abstract">ABSTRACT</a></h1>
+<p>
+</p>
+<hr />
+<h1><a name="description">DESCRIPTION</a></h1>
+<p>
+</p>
+<h2><a name="library">Library</a></h2>
+<p>The Padlock library provides functionality for maintaining cookie-based sessions, file modification, and templated HTML output.  See ``API'' for details.</p>
+<p>
+</p>
+<h2><a name="function_scripts">Function Scripts</a></h2>
+<p>Padlock function scripts interpret the library data and act as frontends to the file manager.</p>
+<p>
+</p>
+<hr />
+<h1><a name="api">API</a></h1>
+<p>
+</p>
+<h2><a name="cookie_session_management">Cookie/Session Management</a></h2>
+<dl>
+<dt><strong><a name="item_new"><code>new(username =&gt; USER, password =&gt; PASSWORD, [nocookie =&gt; 0/1])</code></a></strong><br />
+</dt>
+<dt><strong><code>new(session =&gt; SESSION ID, str =&gt; RANDOM STRING)</code></strong><br />
+</dt>
+<dd>
+Creates a new Padlock session.  Requires one of two login types, either username- and password-based, or cookie-based.  Username/password is self-explanatory.  The ``nocookie'' option, if set, prevents the <a href="#item_auth"><code>auth()</code></a> procedure from writing a cookie to the user's browser.
+</dd>
+<dd>
+<p>For web-based use, Padlock requires that the username- and password-based session be converted into a session-based session.  This is usually done by logging in with username and password, setting a cookie, and redirecting the user:</p>
+</dd>
+<dd>
+<pre>
+ $p = new Padlock(username =&gt; $q-&gt;param('username'), password =&gt; $q-&gt;param('password'));
+ # the nocookie option isn't set, so a cookie is set on the client machine</pre>
+</dd>
+<dd>
+<pre>
+ $p-&gt;redirect('main.cgi');</pre>
+</dd>
+<dd>
+<p>This initiates a session, and further scripts can use the session-based login procedure:</p>
+</dd>
+<dd>
+<pre>
+ my($p) = new Padlock(session =&gt; $q-&gt;cookie('Padlock_ID'), str =&gt; $q-&gt;cookie('Padlock_Str'));</pre>
+</dd>
+<dd>
+<p>Note that the details of the session are dumped to disk immediately after creation.  See <a href="#item_cdump"><code>cdump()</code></a>.</p>
+</dd>
+<p></p></dl>
+<p>
+</p>
+<h2><a name="file_management">File Management</a></h2>
+<dl>
+<dt><strong><a name="item_home"><code>home</code></a></strong><br />
+</dt>
+<dd>
+Returns the user's home directory in <code>chroot()</code> fashion.  Implemented primarily for convenience.
+</dd>
+<dd>
+<pre>
+ print $p-&gt;home;  # prints '/'</pre>
+</dd>
+<p></p>
+<dt><strong><a name="item_root"><code>root</code></a></strong><br />
+</dt>
+<dd>
+Returns the user's root directory (full path name) in a <strong>non</strong>-<code>chroot()</code> fashion.
+</dd>
+<dd>
+<pre>
+ print $p-&gt;root;  # prints '/var/secure_upload/users/testuser' for example</pre>
+</dd>
+<p></p>
+<dt><strong><a name="item_cp"><code>cp(SOURCE, TARGET)</code></a></strong><br />
+</dt>
+<dd>
+Copy a file or directory.  The root directory, ``/'', is interpreted as the <strong>user's</strong> root directory, simulating a <code>chroot()</code>.
+</dd>
+<dd>
+<p>Action is similar to that of the same-named UNIX command, in that directories can be copied (recursively), things can be copied into other directories, etc.</p>
+</dd>
+<dd>
+<p>All arguments to <a href="#item_cp"><code>cp()</code></a> are piped through <a href="#item_check"><code>check()</code></a> to verify that nothing ever escapes the user's home directory into the rest of the system.</p>
+</dd>
+<p></p>
+<dt><strong><a name="item_mv"><code>mv(SOURCE, TARGET)</code></a></strong><br />
+</dt>
+<dd>
+Moves a file or directory.  See <a href="#item_cp"><code>cp()</code></a>.
+</dd>
+<p></p>
+<dt><strong><a name="item_rm"><code>rm(FILE1, FILE2, ..., FILEN)</code></a></strong><br />
+</dt>
+<dd>
+Remove a file or directory.  See <a href="#item_cp"><code>cp()</code></a>.
+</dd>
+<p></p>
+<dt><strong><a name="item_ls"><code>ls(DIR, [sort =&gt; FIELD], [mixed =&gt; 0/1])</code></a></strong><br />
+</dt>
+<dd>
+List a directory, sorted according to <code>FIELD</code> (but defaults to sorting by filename).  Directories are suffixed with a ``/''.
+</dd>
+<dd>
+<p>The <code>MIXED</code> directive tells the lister wether or not the listing should have files and directories mixed together and then sorted, or sorted directories preceeding sorted files.  The default is 0, so they remain separate.</p>
+</dd>
+<dd>
+<p>Valid <code>FIELD</code>s are <code>FILENAME</code>, <code>FILESIZE</code>, <code>EXTENSION</code>, <code>DATE</code>.</p>
+</dd>
+<p></p>
+<dt><strong><a name="item_cd"><code>cd(TARGET)</code></a></strong><br />
+</dt>
+<dd>
+Change directory.  Again, <code>chroot()</code> is emulated.
+</dd>
+<dd>
+<pre>
+ $p-&gt;cd('/');      # brings user home
+ $p-&gt;cd($p-&gt;home); # does the same
+ $p-&gt;cd();         # this too</pre>
+</dd>
+<p></p>
+<dt><strong><a name="item_upload"><code>upload(FILEHANDLE)</code></a></strong><br />
+</dt>
+<dd>
+Upload a file.  Must be used in conjunction with CGI.pm, with a call such as:
+</dd>
+<dd>
+<pre>
+ $p-&gt;upload($q-&gt;upload('file'));</pre>
+</dd>
+<p></p>
+<dt><strong><a name="item_send"><code>send(FILENAME)</code></a></strong><br />
+</dt>
+<dd>
+Uses an octet-stream header to send the file to the browser.  Works on any file in the user's directory.
+</dd>
+<p></p></dl>
+<p>
+</p>
+<h2><a name="html">HTML</a></h2>
+<dl>
+<dt><strong><a name="item_redirect"><code>redirect(URL)</code></a></strong><br />
+</dt>
+<dd>
+Redirect a user to a given URL.
+</dd>
+<p></p></dl>
+<p>
+</p>
+<h2><a name="_private__helper_subroutines">(Private) Helper Subroutines</a></h2>
+<dl>
+<dt><strong><a name="item_catch"><code>catch()</code></a></strong><br />
+</dt>
+<dd>
+If the input value is NOT one (i.e., the operation failed and returned an error message) then the input  is passed off to the <code>html_error()</code> method for log and display.
+</dd>
+<dd>
+<p>Most (publicly defined) methods are passed through the error catcher to avoid internal problems.  It's a good idea to send as much as possible through <a href="#item_catch"><code>catch()</code></a> to avoid <code>500 - Premature End of Script Headers</code> errors.</p>
+</dd>
+<dd>
+<pre>
+ $p-&gt;catch(open(FILE, &quot;$file&quot;) || &quot;Error!  Can't open $file: $!&quot;);</pre>
+</dd>
+</dl>
+<p>
+</p>
+<h3><a name="configuration_hash">Configuration Hash</a></h3>
+<p>A configuration hash is maintained throughout the session; it gets dumped to a session file in between script runs, and can be modified during a run.</p>
+<dl>
+<dt><strong><a name="item_cset"><code>cset()</code></a></strong><br />
+</dt>
+<dd>
+Sets a configuration directive.
+</dd>
+<p></p>
+<dt><strong><a name="item_cread"><code>cread()</code></a></strong><br />
+</dt>
+<dd>
+Reads a configuration directive.
+</dd>
+<p></p>
+<dt><strong><a name="item_cimport"><code>cimport()</code></a></strong><br />
+</dt>
+<dd>
+Imports a dumped configuration hash.  Mainly useful for restoring a session.
+</dd>
+<p></p>
+<dt><strong><a name="item_cdump"><code>cdump()</code></a></strong><br />
+</dt>
+<dd>
+Dumps a configuration hash to disk.  Used for inter-session maintenance of the current configuration.  This is called by <strong>anything</strong> that modifies the user's environment (such as changing working directory, etc.).
+</dd>
+<p></p>
+<dt><strong><a name="item_flags"><code>flags</code></a></strong><br />
+</dt>
+<dd>
+Returns user's flags.  Same as <a href="#item_cread"><code>$p-&gt;cread('flags');</code></a>
+</dd>
+<p></p>
+<dt><strong><a name="item_email"><code>email</code></a></strong><br />
+</dt>
+<dd>
+Returns user's e-mail address.  Same as <a href="#item_cread"><code>$p-&gt;cread('email');</code></a>
+</dd>
+<p></p>
+<dt><strong><a name="item_cwd"><code>cwd</code></a></strong><br />
+</dt>
+<dd>
+Returns user's current working directory WITHIN the virtual <code>chroot()</code>.  Same as <a href="#item_cread"><code>$p-&gt;cread('cwd');</code></a>
+</dd>
+<p></p></dl>
+<p>
+</p>
+<h3><a name="cookie_session_management">Cookie/Session Management</a></h3>
+<dl>
+<dt><strong><a name="item_auth"><code>auth()</code></a></strong><br />
+</dt>
+<dd>
+Authenticates a user by either username/password or pre-existing session and random string.
+</dd>
+<p></p>
+<dt><strong><a name="item_cookie"><code>cookie()</code></a></strong><br />
+</dt>
+<dd>
+Sets a cookie with updated expiration time and new random string.  Nothing special.
+</dd>
+</dl>
+<p>
+</p>
+<h3><a name="file_management">File Management</a></h3>
+<dl>
+<dt><strong><a name="item_copy"><code>copy()</code></a></strong><br />
+</dt>
+<dd>
+Like <a href="#item_cp"><code>cp()</code></a> above, except it does NOT simulate a <code>chroot()</code>.  This can go ANYWHERE on the system (that the user can write to) so it should NOT be used under normal circumstances.
+</dd>
+<dd>
+<p><a href="#item_cp"><code>cp()</code></a> calls <a href="#item_copy"><code>copy()</code></a> to do the actual copying, but many of the safeguards are built in to <a href="#item_cp"><code>cp()</code></a>, so again, <strong>USE WITH EXTREME CAUTION!</strong></p>
+</dd>
+<p></p>
+<dt><strong><a name="item_move"><code>move()</code></a></strong><br />
+</dt>
+<dd>
+Moves a file or directory anywhere on the system.  See <a href="#item_copy"><code>copy()</code></a>.
+</dd>
+<p></p>
+<dt><strong><a name="item_remove"><code>remove()</code></a></strong><br />
+</dt>
+<dd>
+Deletes a file or directory anywhere on the system.  See <a href="#item_copy"><code>copy()</code></a>.
+</dd>
+<p></p>
+<dt><strong><a name="item_list"><code>list()</code></a></strong><br />
+</dt>
+<dd>
+Lists a file or directory anywhere on the system.  See <a href="#item_copy"><code>copy()</code></a>.
+</dd>
+<p></p>
+<dt><strong><a name="item_chdir"><code>chdir()</code></a></strong><br />
+</dt>
+<dd>
+Changes directory to anywhere on the system.  <a href="#item_cd"><code>cd()</code></a> has built-in safety checks to make sure the user doesn't escape his or her home directory.  This version lacks those, so <strong>USE WITH CARE!</strong>
+</dd>
+<p></p>
+<dt><strong><a name="item_check"><code>check()</code></a></strong><br />
+</dt>
+<dd>
+Checks and untaints a file or directory name.
+</dd>
+<dd>
+<p><a href="#item_check"><code>check()</code></a> checks if the request file or path is inside of either the user's home directory or a preconfigured ``safe'' zone -- i.e., a temporary storage area.</p>
+</dd>
+<dd>
+<p>This is especially useful if using Perl's taint mode, because <a href="#item_check"><code>check()</code></a> returns an untainted version of its input which can then be sent to <code>open()</code>, <code>read()</code>, etc..</p>
+</dd>
+<p></p>
+<dt><strong><a name="item_collapse"><code>collapse()</code></a></strong><br />
+</dt>
+<dd>
+Collapses any given path into its cleanest format.  Helps avoid many errors.
+</dd>
+<dd>
+<pre>
+ $p-&gt;collapse('/x//y/./././../z/a/.///b/../'); # returns /x/z/a/</pre>
+</dd>
+</dl>
+<p>
+</p>
+<hr />
+<h1><a name="configuration">CONFIGURATION</a></h1>
+<p>Users are stored, by default, in <em>/etc/secure_upload/users</em>.  Don't touch this file.</p>
+<p>By default, configuration is imported from <em>/etc/secure_upload/config</em>.  Edit this file to your liking.</p>
+<p>Directives are:</p>
+<dl>
+<dt><strong><a name="item_sessions"><code>sessions</code></a></strong><br />
+</dt>
+<dd>
+Location of where session files are located.  These files are generated by <a href="#item_cdump"><code>cdump()</code></a> and read by <a href="#item_cimport"><code>cimport()</code></a> at the end and beginning of each session, respectively.
+</dd>
+<dd>
+<pre>
+ sessions = /var/secure_upload/sessions</pre>
+</dd>
+<p></p>
+<dt><strong><code>root</code></strong><br />
+</dt>
+<dd>
+Defines the root directory for user files.  Default value is <code>/var/secure_upload/users</code>.  All home directories must be within this one (you can use <code>mount --bind</code> to get around this, but the main idea is that all files need to be within a ``protected'' area so that <a href="#item_check"><code>check()</code></a> can make sure the paths aren't where they shouldn't be).
+</dd>
+<dd>
+<pre>
+ root = /var/secure_upload/users</pre>
+</dd>
+<p></p>
+<dt><strong><a name="item_logdir"><code>logdir</code></a></strong><br />
+</dt>
+<dd>
+Directory which holds logs of user transfer histories.
+</dd>
+<dd>
+<pre>
+ logdir = /var/log/secure_upload</pre>
+</dd>
+<p></p>
+<dt><strong><a name="item_admin"><code>admin</code></a></strong><br />
+</dt>
+<dd>
+Admin e-mail address.
+</dd>
+<dd>
+<pre>
+ email = secureftp@slone.bu.edu</pre>
+</dd>
+<p></p>
+<dt><strong><a name="item_web_temp"><code>web_temp</code></a></strong><br />
+</dt>
+<dd>
+Temporary web-accessible space.  This is mainly used when a user requests a file he or she needs to be redirected to, or when viewing a file of some sort.
+</dd>
+<dd>
+<pre>
+ web_temp = /var/www/temp</pre>
+</dd>
+<p></p>
+<dt><strong><a name="item_check_safe"><code>check_safe</code></a></strong><br />
+</dt>
+<dd>
+A colon-delimited list of directores regarded as ``safe'' by <a href="#item_check"><code>check()</code></a>.
+</dd>
+<dd>
+<pre>
+ check_safe = /var/www/temp:/tmp:/var/tmp</pre>
+</dd>
+<p></p></dl>
+<p>
+</p>
+<hr />
+<h1><a name="usage">USAGE</a></h1>
+<p>
+</p>
+<h2><a name="user_management">User Management</a></h2>
+<p>User management, for security's sake, is to be done via shell only.  There is no web frontend or library to provide this functionality, ONLY command-line scripts which must be run as the root user.</p>
+<p>
+</p>
+<h3><a name="adding_users">Adding Users</a></h3>
+<pre>
+ ./adduser.pl -u USERNAME -d HOME -s 0/1 -e EMAIL</pre>
+<p>Adds a user.  The <code>-d</code> flag should give a directory within the configured <a href="#item_root"><code>root</code></a>.  Leave no <code>-e</code> flag to give no e-mail address.</p>
+<p>The <code>-s</code> flag specifies wether or not to make a system user.  This is useful for systems running Padlock and SSH, and you want users to be able to <code>scp</code> and <code>sftp</code> into the box.  The user shell is set to <code>/bin/false</code> by default.</p>
+<p>
+</p>
+<h3><a name="removing_users">Removing Users</a></h3>
+<pre>
+ ./deluser.pl -u USERNAME</pre>
+<p>
+</p>
+<h3><a name="modifying_users">Modifying Users</a></h3>
+<pre>
+ ./moduser.pl -u USERNAME -s 0/1 -e EMAIL -d HOME</pre>
+<p>Rewrites settings for <code>USERNAME</code> to what's specified.  If something isn't specified, it uses what's there already.</p>
+<p>
+</p>
+<h3><a name="resetting_passwords">Resetting Passwords</a></h3>
+<pre>
+ ./chpass.pl -u USERNAME</pre>
+<p>Overwrites the password for <code>USERNAME</code>.</p>
+<p>
+</p>
+<h2><a name="using_the_library">Using the Library</a></h2>
+<p>You need to use this in conjunction with CGI.pm, to pass form values around.  From there, it's relatively simple to get anything done.</p>
+<p>
+</p>
+<hr />
+<h1><a name="bugs">BUGS</a></h1>
+<p>No known bugs.</p>
+<p>
+</p>
+<hr />
+<h1><a name="changelog">CHANGELOG</a></h1>
+<p>v1.0D - 06/18/2004 - Documentation draft 1</p>
+<p>v0.77 - 06/15/2004 - ``Old'' code layout generally complete and usable.</p>
+<p>
+</p>
+<hr />
+<h1><a name="author">AUTHOR</a></h1>
+<p>Matt Perry &lt;<a href="mailto:mperry@slone.bu.edu">mperry@slone.bu.edu</a>&gt;
+
+</p>
+<p>Padlock was developed at Slone Epidemiology Center at Boston University.  Visit <a href="http://www.bu.edu/slone">http://www.bu.edu/slone</a> for more information.
+
+</p>
+<p>
+</p>
+<hr />
+<h1><a name="version">VERSION</a></h1>
+<p>This is Padlock v1.00 (06/30/04)
+
+</p>
+
+</body>
+
+</html>
